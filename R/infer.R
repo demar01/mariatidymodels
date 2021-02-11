@@ -13,7 +13,7 @@ simulator <- function (numer=25, bins=50){
 set.seed(123)
 transcript <- tibble(
     name   = sample(letters,numer),
-    cor   = rbeta(numer,1,10))
+    cor   = rbeta(numer,1,3))
 
 cor_mean <- transcript %>%
     specify(response = cor) %>%

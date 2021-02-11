@@ -1,5 +1,5 @@
 ---
-title: "infer"
+title: "Diving into infer"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{rsample}
@@ -14,12 +14,64 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r setup, message=FALSE}
 library(mariatidymodels)
+library(dplyr)
+library(infer)
 ```
 
+### Exploring infer
+
+The most useful verbs in infer to ply with statistical inference are:
+
+-   `specify()` specifies the variable, or relationship between variables, of interest
+-   `hypothesize()` declare the null hypothesis. It can be independence of two variables or a mean number.
+-   `generate()` generates resamples
+-   `calculate()` calculates summary estatistics taking as input from hypothesize() or generate()
+
+Let's generate some random datapoints with beta distribution
+
+```{r generating-data, warning = FALSE, message = FALSE}
+set.seed(123)
+transcript <- tibble(
+    name   = sample(letters,25),
+    cor   = rbeta(25,1,3))
+```
+
+Let's calculate the mean of this distribution
+
+```{r}
+cor_mean <- transcript %>%
+    specify(response = cor) %>%
+    calculate(stat = "mean")
+```
+
+The problem at task is to determine which of those correlations is statistically significant.
+
+```{r}
+null_distn <- transcript %>%
+    specify(response = cor) %>%
+    hypothesize(null = "point", mu = as.numeric(cor_mean)) %>%
+    generate(reps = 1000, type = "bootstrap") %>%
+    calculate(stat = "mean")
+```
+
+We can get the confidence interval for a given ⍺ level.
+
+```{r}
+percentile_ci <- get_confidence_interval(null_distn, level = 0.95)
+
+```
+
+We can visualise those results with a nice ggplot object
+
+```{r}
+visualize(null_distn,bins = 20) +
+    shade_confidence_interval(endpoints = percentile_ci)
+```
+
+My little wrapper for this particular task
 
 ```{r simulate}
-simulator()
+simulator(numer=25, bins=20)
 ```
-
