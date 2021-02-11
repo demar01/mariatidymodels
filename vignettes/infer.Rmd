@@ -2,7 +2,7 @@
 title: "Diving into infer"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{rsample}
+  %\VignetteIndexEntry{infer}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
