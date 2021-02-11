@@ -7,9 +7,10 @@
 #' @examples
 #' simulator()
 #' @import infer
+#' @importFrom dplyr tibble
 #' @export
 simulator <- function (numer=25, bins=50){
-set.sed(123)
+set.seed(123)
 transcript <- tibble(
     name   = sample(letters,numer),
     cor   = rbeta(numer,1,10))

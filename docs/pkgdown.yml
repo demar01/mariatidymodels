@@ -2,6 +2,7 @@ pandoc: 2.11.2
 pkgdown: 1.6.1
 pkgdown_sha: ~
 articles:
+  infer: infer.html
   rsample: rsample.html
-last_built: 2021-02-10T23:46Z
+last_built: 2021-02-11T19:29Z
 

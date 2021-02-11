@@ -2,13 +2,23 @@ Package: mariatidymodels
 Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Author:
+    c(person(given = "Maria",
+             family = "Dermit",
+             role = c("aut", "cre"),
+             email = "maria.dermit@qmul.ac.uk"),
+             comment= c(ORCID = "0000-0002-6287-8367s"))
+Maintainer: Maria Dermit <maria.dermit@qmul.ac.uk>
 Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+    Use four spaces when indentisng paragraphs within the Description.
 License: What license is it under?
 Encoding: UTF-8
+Depends:
+    R (>= 3.6.0)
 LazyData: true
+Imports:
+    dplyr (>= 0.7.0),
+    infer
 Suggests: 
     knitr,
     rmarkdown
