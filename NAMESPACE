@@ -3,3 +3,5 @@
 export(simulator)
 import(infer)
 importFrom(dplyr,tibble)
+importFrom(stats,cor)
+importFrom(stats,rbeta)

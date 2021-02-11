@@ -8,6 +8,7 @@
 #' simulator()
 #' @import infer
 #' @importFrom dplyr tibble
+#' @importFrom stats cor rbeta
 #' @export
 simulator <- function (numer=25, bins=50){
 set.seed(123)
