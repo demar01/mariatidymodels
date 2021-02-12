@@ -3,8 +3,11 @@ title: "rsample"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{rsample}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r, include = FALSE}
@@ -16,4 +19,86 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(mariatidymodels)
+library(rsample)
+library(tidymodels)
+library(modeldata)
 ```
+
+Let's get the `attrition` data from modeldata package
+
+```{r}
+data("attrition", package = "modeldata")
+```
+
+There are two main two main
+
+1.  Cross-validation
+
+2.  Bootstrapping
+
+1.  Cross-validation
+
+It is use to test how the result of a statistic analysis will generalize
+to a new situation
+
+![](https://raw.githubusercontent.com/topepo/rstudio-conf-2018/master/Materials/Part_2_Basic_Principals_files/figure-html/cv-plot-1.svg)
+
+V-fold cross-validation randomly splits the data into V groups of
+roughly equal size (called "folds"). Repeat is optional, and will make
+copies of each fold.
+
+```{r}
+set.seed(4622)
+rs_obj <- vfold_cv(attrition, v = 10, repeats = 10)
+```
+
+We can get the data for each split with `analysis` or `assessment`
+
+```{r}
+analysis(rs_obj$splits[[1]]) %>% class()
+
+analysis(rs_obj$splits[[1]]) %>% dim()
+
+assessment(rs_obj$splits[[1]]) %>% dim()
+
+```
+
+#### some functional programming stuff ( bc we pass the dunction to see how is going to perfomr with new data)
+
+\#How this model is going to perform with new data
+
+# bootstrapping resampling with replacement
+
+ggplot(attrition, aes(x = Gender, y = MonthlyIncome)) + geom_boxplot() +
+scale_y\_log10()
+
+set.seed(353) bt_resamples \<- bootstraps(attrition, times = 500)
+analysis(bt_resamples$splits[[1]]) %>% dim() assessment(bt_resamples$splits[[1]])
+%\>% dim()
+
+analysis(bt_resamples\$splits[[1]]) %\>% filter(Gender=="Male") %\>%
+pull(MonthlyIncome) %\>% median()
+
+analysis(bt_resamples\$splits[[1]]) %\>% filter(Gender=="Female") %\>%
+pull(MonthlyIncome) %\>% median()
+
+analysis(bt_resamples\$splits[[2]]) %\>% filter(Gender=="Male") %\>%
+pull(MonthlyIncome) %\>% median()
+
+analysis(bt_resamples\$splits[[2]]) %\>% filter(Gender=="Female") %\>%
+pull(MonthlyIncome) %\>% median()
+
+And with FP magic... median_diff \<- function(splits) { x \<-
+analysis(splits) median(x$MonthlyIncome[x$Gender == "Female"]) -
+median(x$MonthlyIncome[x$Gender == "Male"])\
+}
+
+bt_resamples$wage_diff <- map_dbl(bt_resamples$splits, median_diff)
+
+ggplot(bt_resamples, aes(x = wage_diff)) + geom_line(stat = "density",
+adjust = 1.25) + xlab("Difference in Median Monthly Income (Female -
+Male)")
+
+<https://journals.sagepub.com/doi/pdf/10.1177/201010581001900316>
+
+mc_cv(attrition, prop = 9/10, times = 20)
