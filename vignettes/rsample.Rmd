@@ -36,7 +36,7 @@ There are two main two main
 
 2.  Bootstrapping
 
-1.  Cross-validation
+3.  Cross-validation
 
 It is use to test how the result of a statistic analysis will generalize
 to a new situation
@@ -63,7 +63,7 @@ assessment(rs_obj$splits[[1]]) %>% dim()
 
 ```
 
-#### some functional programming stuff ( bc we pass the dunction to see how is going to perfomr with new data)
+#### write a function and perform functional programming.  W pass the function to see how is going to perfomr with new data)
 
 \#How this model is going to perform with new data
 
