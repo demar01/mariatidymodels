@@ -40,7 +40,7 @@ our dataset):
 # Cross-validation
 
 It is use to test how the result of a statistic analysis will generalize
-to a new situatio.
+to a new situation.
 
 ![](https://raw.githubusercontent.com/topepo/rstudio-conf-2018/master/Materials/Part_2_Basic_Principals_files/figure-html/cv-plot-1.svg)
 
@@ -225,7 +225,7 @@ and there is a trade-off between bias and variance for these method.
 Max Kuhn insight is that he tend to favor 5 repeats of 10-fold CV unless
 the size of the assessment data is large enough.
 
-# Source
+# Source 
 
 This post is an adaptation from [rsample
 vignette](https://rsample.tidymodels.org/index.html), [resampling
