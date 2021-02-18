@@ -225,7 +225,7 @@ and there is a trade-off between bias and variance for these method.
 Max Kuhn insight is that he tend to favor 5 repeats of 10-fold CV unless
 the size of the assessment data is large enough.
 
-# Source 
+# Source
 
 This post is an adaptation from [rsample
 vignette](https://rsample.tidymodels.org/index.html), [resampling
