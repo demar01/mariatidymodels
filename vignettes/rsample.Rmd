@@ -30,16 +30,17 @@ Let's get the `attrition` data from modeldata package
 data("attrition", package = "modeldata")
 ```
 
-There are two main two main
+There are two main methods for resampling (taking repeated samples from
+our dataset):
 
 1.  Cross-validation
 
 2.  Bootstrapping
 
-3.  Cross-validation
+# Cross-validation
 
 It is use to test how the result of a statistic analysis will generalize
-to a new situation
+to a new situatio.
 
 ![](https://raw.githubusercontent.com/topepo/rstudio-conf-2018/master/Materials/Part_2_Basic_Principals_files/figure-html/cv-plot-1.svg)
 
@@ -52,7 +53,11 @@ set.seed(4622)
 rs_obj <- vfold_cv(attrition, v = 10, repeats = 10)
 ```
 
-We can get the data for each split with `analysis` or `assessment`
+Note that **rsample** objects also always contain a character column
+called `id` that labels the partition.
+
+We can get the partitioned data for each split with `analysis` or
+`assessment.`
 
 ```{r}
 analysis(rs_obj$splits[[1]]) %>% class()
@@ -61,44 +66,173 @@ analysis(rs_obj$splits[[1]]) %>% dim()
 
 assessment(rs_obj$splits[[1]]) %>% dim()
 
+# We can also incorporate the analysis and assesment into vfold_cv data list
+rs_obj %>% 
+  mutate(df_ana = map(splits, analysis),
+         df_ass = map(splits, assessment))
+
+
 ```
 
-#### write a function and perform functional programming.  W pass the function to see how is going to perfomr with new data)
+We can see that the **analysis** data set is 90% of the data used for
+modeling, and the **assessment** data set is the remaining 10%. We can
+now write a function that:
 
-\#How this model is going to perform with new data
+1.  Fits a logistic regression model with the **analysis data set**
+2.  Predicts using the **assessment** data
+3.  Calculate whether the prediction was correct
 
-# bootstrapping resampling with replacement
-
-ggplot(attrition, aes(x = Gender, y = MonthlyIncome)) + geom_boxplot() +
-scale_y\_log10()
-
-set.seed(353) bt_resamples \<- bootstraps(attrition, times = 500)
-analysis(bt_resamples$splits[[1]]) %>% dim() assessment(bt_resamples$splits[[1]])
-%\>% dim()
-
-analysis(bt_resamples\$splits[[1]]) %\>% filter(Gender=="Male") %\>%
-pull(MonthlyIncome) %\>% median()
-
-analysis(bt_resamples\$splits[[1]]) %\>% filter(Gender=="Female") %\>%
-pull(MonthlyIncome) %\>% median()
-
-analysis(bt_resamples\$splits[[2]]) %\>% filter(Gender=="Male") %\>%
-pull(MonthlyIncome) %\>% median()
-
-analysis(bt_resamples\$splits[[2]]) %\>% filter(Gender=="Female") %\>%
-pull(MonthlyIncome) %\>% median()
-
-And with FP magic... median_diff \<- function(splits) { x \<-
-analysis(splits) median(x$MonthlyIncome[x$Gender == "Female"]) -
-median(x$MonthlyIncome[x$Gender == "Male"])\
+```{r}
+holdout_results <- function(splits, ...) {
+    # Fit a glm model with  90% of the splits
+    mod <- glm(..., data = analysis(splits), family = binomial)
+    # Save the 10%
+    assesmentdata <- assessment(splits)
+    # `augment` will save the predictions with assesmentdata
+    res <- broom::augment(mod, newdata = assesmentdata)
+    # Class predictions on the assessment set from class probs
+    lvls <- levels(assesmentdata$Attrition)
+    predictions <- factor(ifelse(res$.fitted > 0, lvls[2], lvls[1]),
+                          levels = lvls)
+    # Calculate whether the prediction was correct
+    res$correct <- predictions == assesmentdata$Attrition
+    # Return the assessment data set with the additional columns
+    res
 }
+```
 
+This function is going to take our resample data rs_obj and a formula
+that specifies a logistic regression model to the data. For example we
+can model attrition with job satisfaction, gender, and monthly income.
+
+```{r}
+mod_form <- as.formula(Attrition ~ JobSatisfaction + Gender + MonthlyIncome)
+```
+
+```{r}
+rs_obj$results <- map(rs_obj$splits,
+                      holdout_results,
+                      mod_form)
+
+rs_obj
+
+```
+
+Now we can compute the accuracy values for all of the assessment data
+sets:
+
+```{r}
+map(rs_obj,length)
+rs_obj$accuracy <- map_dbl(rs_obj$results, function(x) mean(x$correct))
+summary(rs_obj$accuracy)
+```
+
+This is not a great model since the baseline accuracy to beat is the
+rate of non-attrition, which is 0.8388. One problem with this glm model
+is that is a fairly biased model; it will not adapt well to new
+situations. However, it has low variance, since it leverages all the
+datapoints to estimate the parameters.
+
+# Bootstrapping
+
+Bootstrapping on the other hand, is resampling with replacement.
+Bootstrapping is generally used to make sense of a distribution of
+interest, but we can also use bootstrapping to estimate model
+performance.
+
+![](https://raw.githubusercontent.com/topepo/rstudio-conf-2018/master/Materials/Part_2_Basic_Principals_files/figure-html/boot-plot-1.svg)
+
+We can assess difference across groups, such as MonthlyIncome across
+genders:
+
+```{r}
+ggplot(attrition, aes(x = Gender, y = MonthlyIncome)) + 
+  geom_boxplot() + 
+  scale_y_log10()
+```
+
+It looks like the mean of monthly income is slightly higher for females.
+We could formally compare the median monthly incomes for the two groups
+with a t-test; instead we can use bootstrap to inference if there is a
+difference in monthly incomes using confidence intervals.
+
+```{r}
+set.seed(353) 
+
+bt_resamples <- bootstraps(attrition, times = 500) 
+
+analysis(bt_resamples$splits[[1]]) %>% dim() 
+assessment(bt_resamples$splits[[1]]) %>% dim()
+
+```
+
+```{r}
+analysis(bt_resamples$splits[[1]]) %>% filter(Gender=="Male") %>% pull(MonthlyIncome) %>% median()
+
+analysis(bt_resamples$splits[[1]]) %>% filter(Gender=="Female") %>% pull(MonthlyIncome) %>% median()
+
+analysis(bt_resamples$splits[[2]]) %>% filter(Gender=="Male") %>% pull(MonthlyIncome) %>% median()
+
+analysis(bt_resamples$splits[[2]]) %>% filter(Gender=="Female") %>% pull(MonthlyIncome) %>% median()
+```
+
+We can write a function to compare median differences.
+
+```{r}
+median_diff <- function(splits) {
+  x <- analysis(splits)
+  median(x$MonthlyIncome[x$Gender == "Female"]) - 
+      median(x$MonthlyIncome[x$Gender == "Male"])     
+}
+```
+
+This function is then computed across each resample:
+
+```{r}
 bt_resamples$wage_diff <- map_dbl(bt_resamples$splits, median_diff)
+```
 
-ggplot(bt_resamples, aes(x = wage_diff)) + geom_line(stat = "density",
-adjust = 1.25) + xlab("Difference in Median Monthly Income (Female -
-Male)")
+We can visualise that difference between genders
 
-<https://journals.sagepub.com/doi/pdf/10.1177/201010581001900316>
+```{r}
+ggplot(bt_resamples, aes(x = wage_diff)) + geom_line(stat = "density", adjust = 1.25) + xlab("Difference in Median Monthly Income (Female - Male)")
+```
 
-mc_cv(attrition, prop = 9/10, times = 20)
+We can now compute confidence intervals from the bootstrap distribution.
+A 95% confidence interval for the difference in the means would be:
+
+```{r}
+quantile(bt_resamples$wage_diff, 
+         probs = c(0.025, 0.975))
+```
+
+The calculated 95% confidence interval contains zero, so we don't have
+evidence for a difference in median income between these genders at a
+confidence level of 95%.
+
+# Comparing resamples methods
+
+We have seen that resamples methods produce model performance estimates,
+and there is a trade-off between bias and variance for these method.
+
+-   Variance: is mostly driven by the number of resamples (less folds CV
+    have more variance than more folds). Bootstrap samples produce
+    performance estimates that have very low variance.
+
+-   Bias: is mostly driven by the amount of data that is held back.
+    Bootstrap has large bias compared to CV.
+
+Max Kuhn insight is that he tend to favor 5 repeats of 10-fold CV unless
+the size of the assessment data is large enough.
+
+# Source
+
+This post is an adaptation from [rsample
+vignette](https://rsample.tidymodels.org/index.html), [resampling
+methods with R](https://speakerdeck.com/statsfan/rsample-sampler),
+[resampling
+methods](https://github.com/topepo/rstudio-conf-2018/blob/master/Materials/Part_2_Basic_Principals.pdf)
+and [Resampling for evaluating
+performance](https://www.tmwr.org/resampling.html). Those are fantastic
+resources to get a better understanding of the underlying principles of
+resampling.

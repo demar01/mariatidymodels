@@ -89,12 +89,216 @@
     
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">mariatidymodels</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">mariatidymodels</span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://rsample.tidymodels.org">rsample</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://tidymodels.tidymodels.org">tidymodels</a></span><span class="op">)</span>
+<span class="co">#&gt; ── Attaching packages ───────────────────────────────── tidymodels 0.1.2.9000 ──</span>
+<span class="co">#&gt; ✓ broom     0.7.4      ✓ purrr     0.3.4 </span>
+<span class="co">#&gt; ✓ dials     0.0.9      ✓ recipes   0.1.15</span>
+<span class="co">#&gt; ✓ dplyr     1.0.4      ✓ tibble    3.0.6 </span>
+<span class="co">#&gt; ✓ ggplot2   3.3.3      ✓ tidyr     1.1.2 </span>
+<span class="co">#&gt; ✓ infer     0.5.4      ✓ tune      0.1.2 </span>
+<span class="co">#&gt; ✓ modeldata 0.1.0      ✓ workflows 0.2.1 </span>
+<span class="co">#&gt; ✓ parsnip   0.1.5      ✓ yardstick 0.0.7</span>
+<span class="co">#&gt; ── Conflicts ───────────────────────────────────────── tidymodels_conflicts() ──</span>
+<span class="co">#&gt; x purrr::discard() masks scales::discard()</span>
+<span class="co">#&gt; x dplyr::filter()  masks stats::filter()</span>
+<span class="co">#&gt; x dplyr::lag()     masks stats::lag()</span>
+<span class="co">#&gt; x recipes::step()  masks stats::step()</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://modeldata.tidymodels.org">modeldata</a></span><span class="op">)</span></code></pre></div>
+<p>Let’s get the <code>attrition</code> data from modeldata package</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html">data</a></span><span class="op">(</span><span class="st">"attrition"</span>, package <span class="op">=</span> <span class="st">"modeldata"</span><span class="op">)</span></code></pre></div>
+<p>There are two main methods for resampling (taking repeated samples from our dataset):</p>
+<ol style="list-style-type: decimal">
+<li><p>Cross-validation</p></li>
+<li><p>Bootstrapping</p></li>
+</ol>
+<div id="cross-validation" class="section level1">
+<h1 class="hasAnchor">
+<a href="#cross-validation" class="anchor"></a>Cross-validation</h1>
+<p>It is use to test how the result of a statistic analysis will generalize to a new situatio.</p>
+<p><img src="https://raw.githubusercontent.com/topepo/rstudio-conf-2018/master/Materials/Part_2_Basic_Principals_files/figure-html/cv-plot-1.svg"></p>
+<p>V-fold cross-validation randomly splits the data into V groups of roughly equal size (called “folds”). Repeat is optional, and will make copies of each fold.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">4622</span><span class="op">)</span>
+<span class="va">rs_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsample.tidymodels.org/reference/vfold_cv.html">vfold_cv</a></span><span class="op">(</span><span class="va">attrition</span>, v <span class="op">=</span> <span class="fl">10</span>, repeats <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></code></pre></div>
+<p>Note that <strong>rsample</strong> objects also always contain a character column called <code>id</code> that labels the partition.</p>
+<p>We can get the partitioned data for each split with <code>analysis</code> or <code>assessment.</code></p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">analysis</a></span><span class="op">(</span><span class="va">rs_obj</span><span class="op">$</span><span class="va">splits</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; [1] "data.frame"</span>
+
+<span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">analysis</a></span><span class="op">(</span><span class="va">rs_obj</span><span class="op">$</span><span class="va">splits</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; [1] 1323   31</span>
+
+<span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">assessment</a></span><span class="op">(</span><span class="va">rs_obj</span><span class="op">$</span><span class="va">splits</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; [1] 147  31</span>
+
+<span class="co"># We can also incorporate the analysis and assesment into vfold_cv data list</span>
+<span class="va">rs_obj</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span>df_ana <span class="op">=</span> <span class="fu">map</span><span class="op">(</span><span class="va">splits</span>, <span class="va">analysis</span><span class="op">)</span>,
+         df_ass <span class="op">=</span> <span class="fu">map</span><span class="op">(</span><span class="va">splits</span>, <span class="va">assessment</span><span class="op">)</span><span class="op">)</span>
+<span class="co">#&gt; #  10-fold cross-validation repeated 10 times </span>
+<span class="co">#&gt; # A tibble: 100 x 5</span>
+<span class="co">#&gt;    splits             id       id2    df_ana                 df_ass             </span>
+<span class="co">#&gt;    &lt;list&gt;             &lt;chr&gt;    &lt;chr&gt;  &lt;list&gt;                 &lt;list&gt;             </span>
+<span class="co">#&gt;  1 &lt;split [1.3K/147]&gt; Repeat01 Fold01 &lt;df[,31] [1,323 × 31]&gt; &lt;df[,31] [147 × 31…</span>
+<span class="co">#&gt;  2 &lt;split [1.3K/147]&gt; Repeat01 Fold02 &lt;df[,31] [1,323 × 31]&gt; &lt;df[,31] [147 × 31…</span>
+<span class="co">#&gt;  3 &lt;split [1.3K/147]&gt; Repeat01 Fold03 &lt;df[,31] [1,323 × 31]&gt; &lt;df[,31] [147 × 31…</span>
+<span class="co">#&gt;  4 &lt;split [1.3K/147]&gt; Repeat01 Fold04 &lt;df[,31] [1,323 × 31]&gt; &lt;df[,31] [147 × 31…</span>
+<span class="co">#&gt;  5 &lt;split [1.3K/147]&gt; Repeat01 Fold05 &lt;df[,31] [1,323 × 31]&gt; &lt;df[,31] [147 × 31…</span>
+<span class="co">#&gt;  6 &lt;split [1.3K/147]&gt; Repeat01 Fold06 &lt;df[,31] [1,323 × 31]&gt; &lt;df[,31] [147 × 31…</span>
+<span class="co">#&gt;  7 &lt;split [1.3K/147]&gt; Repeat01 Fold07 &lt;df[,31] [1,323 × 31]&gt; &lt;df[,31] [147 × 31…</span>
+<span class="co">#&gt;  8 &lt;split [1.3K/147]&gt; Repeat01 Fold08 &lt;df[,31] [1,323 × 31]&gt; &lt;df[,31] [147 × 31…</span>
+<span class="co">#&gt;  9 &lt;split [1.3K/147]&gt; Repeat01 Fold09 &lt;df[,31] [1,323 × 31]&gt; &lt;df[,31] [147 × 31…</span>
+<span class="co">#&gt; 10 &lt;split [1.3K/147]&gt; Repeat01 Fold10 &lt;df[,31] [1,323 × 31]&gt; &lt;df[,31] [147 × 31…</span>
+<span class="co">#&gt; # … with 90 more rows</span></code></pre></div>
+<p>We can see that the <strong>analysis</strong> data set is 90% of the data used for modeling, and the <strong>assessment</strong> data set is the remaining 10%. We can now write a function that:</p>
+<ol style="list-style-type: decimal">
+<li>Fits a logistic regression model with the <strong>analysis data set</strong>
+</li>
+<li>Predicts using the <strong>assessment</strong> data</li>
+<li>Calculate whether the prediction was correct</li>
+</ol>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">holdout_results</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">splits</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span>
+    <span class="co"># Fit a glm model with  90% of the splits</span>
+    <span class="va">mod</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html">glm</a></span><span class="op">(</span><span class="va">...</span>, data <span class="op">=</span> <span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">analysis</a></span><span class="op">(</span><span class="va">splits</span><span class="op">)</span>, family <span class="op">=</span> <span class="va">binomial</span><span class="op">)</span>
+    <span class="co"># Save the 10%</span>
+    <span class="va">assesmentdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">assessment</a></span><span class="op">(</span><span class="va">splits</span><span class="op">)</span>
+    <span class="co"># `augment` will save the predictions with assesmentdata</span>
+    <span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">broom</span><span class="fu">::</span><span class="fu"><a href="https://generics.r-lib.org/reference/augment.html">augment</a></span><span class="op">(</span><span class="va">mod</span>, newdata <span class="op">=</span> <span class="va">assesmentdata</span><span class="op">)</span>
+    <span class="co"># Class predictions on the assessment set from class probs</span>
+    <span class="va">lvls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/levels.html">levels</a></span><span class="op">(</span><span class="va">assesmentdata</span><span class="op">$</span><span class="va">Attrition</span><span class="op">)</span>
+    <span class="va">predictions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">.fitted</span> <span class="op">&gt;</span> <span class="fl">0</span>, <span class="va">lvls</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>, <span class="va">lvls</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>,
+                          levels <span class="op">=</span> <span class="va">lvls</span><span class="op">)</span>
+    <span class="co"># Calculate whether the prediction was correct</span>
+    <span class="va">res</span><span class="op">$</span><span class="va">correct</span> <span class="op">&lt;-</span> <span class="va">predictions</span> <span class="op">==</span> <span class="va">assesmentdata</span><span class="op">$</span><span class="va">Attrition</span>
+    <span class="co"># Return the assessment data set with the additional columns</span>
+    <span class="va">res</span>
+<span class="op">}</span></code></pre></div>
+<p>This function is going to take our resample data rs_obj and a formula that specifies a logistic regression model to the data. For example we can model attrition with job satisfaction, gender, and monthly income.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mod_form</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/formula.html">as.formula</a></span><span class="op">(</span><span class="va">Attrition</span> <span class="op">~</span> <span class="va">JobSatisfaction</span> <span class="op">+</span> <span class="va">Gender</span> <span class="op">+</span> <span class="va">MonthlyIncome</span><span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">rs_obj</span><span class="op">$</span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">map</span><span class="op">(</span><span class="va">rs_obj</span><span class="op">$</span><span class="va">splits</span>,
+                      <span class="va">holdout_results</span>,
+                      <span class="va">mod_form</span><span class="op">)</span>
+
+<span class="va">rs_obj</span>
+<span class="co">#&gt; #  10-fold cross-validation repeated 10 times </span>
+<span class="co">#&gt; # A tibble: 100 x 4</span>
+<span class="co">#&gt;    splits             id       id2    results            </span>
+<span class="co">#&gt;    &lt;list&gt;             &lt;chr&gt;    &lt;chr&gt;  &lt;list&gt;             </span>
+<span class="co">#&gt;  1 &lt;split [1.3K/147]&gt; Repeat01 Fold01 &lt;tibble [147 × 34]&gt;</span>
+<span class="co">#&gt;  2 &lt;split [1.3K/147]&gt; Repeat01 Fold02 &lt;tibble [147 × 34]&gt;</span>
+<span class="co">#&gt;  3 &lt;split [1.3K/147]&gt; Repeat01 Fold03 &lt;tibble [147 × 34]&gt;</span>
+<span class="co">#&gt;  4 &lt;split [1.3K/147]&gt; Repeat01 Fold04 &lt;tibble [147 × 34]&gt;</span>
+<span class="co">#&gt;  5 &lt;split [1.3K/147]&gt; Repeat01 Fold05 &lt;tibble [147 × 34]&gt;</span>
+<span class="co">#&gt;  6 &lt;split [1.3K/147]&gt; Repeat01 Fold06 &lt;tibble [147 × 34]&gt;</span>
+<span class="co">#&gt;  7 &lt;split [1.3K/147]&gt; Repeat01 Fold07 &lt;tibble [147 × 34]&gt;</span>
+<span class="co">#&gt;  8 &lt;split [1.3K/147]&gt; Repeat01 Fold08 &lt;tibble [147 × 34]&gt;</span>
+<span class="co">#&gt;  9 &lt;split [1.3K/147]&gt; Repeat01 Fold09 &lt;tibble [147 × 34]&gt;</span>
+<span class="co">#&gt; 10 &lt;split [1.3K/147]&gt; Repeat01 Fold10 &lt;tibble [147 × 34]&gt;</span>
+<span class="co">#&gt; # … with 90 more rows</span></code></pre></div>
+<p>Now we can compute the accuracy values for all of the assessment data sets:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">map</span><span class="op">(</span><span class="va">rs_obj</span>,<span class="va">length</span><span class="op">)</span>
+<span class="co">#&gt; $splits</span>
+<span class="co">#&gt; [1] 100</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; $id</span>
+<span class="co">#&gt; [1] 100</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; $id2</span>
+<span class="co">#&gt; [1] 100</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; $results</span>
+<span class="co">#&gt; [1] 100</span>
+<span class="va">rs_obj</span><span class="op">$</span><span class="va">accuracy</span> <span class="op">&lt;-</span> <span class="fu">map_dbl</span><span class="op">(</span><span class="va">rs_obj</span><span class="op">$</span><span class="va">results</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="va">correct</span><span class="op">)</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">rs_obj</span><span class="op">$</span><span class="va">accuracy</span><span class="op">)</span>
+<span class="co">#&gt;    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span>
+<span class="co">#&gt;  0.7755  0.8214  0.8401  0.8388  0.8588  0.9048</span></code></pre></div>
+<p>This is not a great model since the baseline accuracy to beat is the rate of non-attrition, which is 0.8388. One problem with this glm model is that is a fairly biased model; it will not adapt well to new situations. However, it has low variance, since it leverages all the datapoints to estimate the parameters.</p>
+</div>
+<div id="bootstrapping" class="section level1">
+<h1 class="hasAnchor">
+<a href="#bootstrapping" class="anchor"></a>Bootstrapping</h1>
+<p>Bootstrapping on the other hand, is resampling with replacement. Bootstrapping is generally used to make sense of a distribution of interest, but we can also use bootstrapping to estimate model performance.</p>
+<p><img src="https://raw.githubusercontent.com/topepo/rstudio-conf-2018/master/Materials/Part_2_Basic_Principals_files/figure-html/boot-plot-1.svg"></p>
+<p>We can assess difference across groups, such as MonthlyIncome across genders:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">ggplot</span><span class="op">(</span><span class="va">attrition</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">Gender</span>, y <span class="op">=</span> <span class="va">MonthlyIncome</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> 
+  <span class="fu">geom_boxplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> 
+  <span class="fu">scale_y_log10</span><span class="op">(</span><span class="op">)</span></code></pre></div>
+<p><img src="rsample_files/figure-html/unnamed-chunk-9-1.png" width="700"></p>
+<p>It looks like the mean of monthly income is slightly higher for females. We could formally compare the median monthly incomes for the two groups with a t-test; instead we can use bootstrap to inference if there is a difference in monthly incomes using confidence intervals.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">353</span><span class="op">)</span> 
+
+<span class="va">bt_resamples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsample.tidymodels.org/reference/bootstraps.html">bootstraps</a></span><span class="op">(</span><span class="va">attrition</span>, times <span class="op">=</span> <span class="fl">500</span><span class="op">)</span> 
+
+<span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">analysis</a></span><span class="op">(</span><span class="va">bt_resamples</span><span class="op">$</span><span class="va">splits</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="op">)</span> 
+<span class="co">#&gt; [1] 1470   31</span>
+<span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">assessment</a></span><span class="op">(</span><span class="va">bt_resamples</span><span class="op">$</span><span class="va">splits</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; [1] 558  31</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">analysis</a></span><span class="op">(</span><span class="va">bt_resamples</span><span class="op">$</span><span class="va">splits</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">Gender</span><span class="op">==</span><span class="st">"Male"</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span><span class="op">(</span><span class="va">MonthlyIncome</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; [1] 4771</span>
+
+<span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">analysis</a></span><span class="op">(</span><span class="va">bt_resamples</span><span class="op">$</span><span class="va">splits</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">Gender</span><span class="op">==</span><span class="st">"Female"</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span><span class="op">(</span><span class="va">MonthlyIncome</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; [1] 4907</span>
+
+<span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">analysis</a></span><span class="op">(</span><span class="va">bt_resamples</span><span class="op">$</span><span class="va">splits</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">Gender</span><span class="op">==</span><span class="st">"Male"</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span><span class="op">(</span><span class="va">MonthlyIncome</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; [1] 4683</span>
+
+<span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">analysis</a></span><span class="op">(</span><span class="va">bt_resamples</span><span class="op">$</span><span class="va">splits</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="va">Gender</span><span class="op">==</span><span class="st">"Female"</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html">pull</a></span><span class="op">(</span><span class="va">MonthlyIncome</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co">#&gt; [1] 4965.5</span></code></pre></div>
+<p>We can write a function to compare median differences.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">median_diff</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">splits</span><span class="op">)</span> <span class="op">{</span>
+  <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rsample.tidymodels.org/reference/as.data.frame.rsplit.html">analysis</a></span><span class="op">(</span><span class="va">splits</span><span class="op">)</span>
+  <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="va">MonthlyIncome</span><span class="op">[</span><span class="va">x</span><span class="op">$</span><span class="va">Gender</span> <span class="op">==</span> <span class="st">"Female"</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> 
+      <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="va">MonthlyIncome</span><span class="op">[</span><span class="va">x</span><span class="op">$</span><span class="va">Gender</span> <span class="op">==</span> <span class="st">"Male"</span><span class="op">]</span><span class="op">)</span>     
+<span class="op">}</span></code></pre></div>
+<p>This function is then computed across each resample:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">bt_resamples</span><span class="op">$</span><span class="va">wage_diff</span> <span class="op">&lt;-</span> <span class="fu">map_dbl</span><span class="op">(</span><span class="va">bt_resamples</span><span class="op">$</span><span class="va">splits</span>, <span class="va">median_diff</span><span class="op">)</span></code></pre></div>
+<p>We can visualise that difference between genders</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">ggplot</span><span class="op">(</span><span class="va">bt_resamples</span>, <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">wage_diff</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_line</span><span class="op">(</span>stat <span class="op">=</span> <span class="st">"density"</span>, adjust <span class="op">=</span> <span class="fl">1.25</span><span class="op">)</span> <span class="op">+</span> <span class="fu">xlab</span><span class="op">(</span><span class="st">"Difference in Median Monthly Income (Female - Male)"</span><span class="op">)</span></code></pre></div>
+<p><img src="rsample_files/figure-html/unnamed-chunk-14-1.png" width="700"></p>
+<p>We can now compute confidence intervals from the bootstrap distribution. A 95% confidence interval for the difference in the means would be:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">bt_resamples</span><span class="op">$</span><span class="va">wage_diff</span>, 
+         probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span>
+<span class="co">#&gt;     2.5%    97.5% </span>
+<span class="co">#&gt; -188.575  614.875</span></code></pre></div>
+<p>The calculated 95% confidence interval contains zero, so we don’t have evidence for a difference in median income between these genders at a confidence level of 95%.</p>
+</div>
+<div id="comparing-resamples-methods" class="section level1">
+<h1 class="hasAnchor">
+<a href="#comparing-resamples-methods" class="anchor"></a>Comparing resamples methods</h1>
+<p>We have seen that resamples methods produce model performance estimates, and there is a trade-off between bias and variance for these method.</p>
+<ul>
+<li><p>Variance: is mostly driven by the number of resamples (less folds CV have more variance than more folds). Bootstrap samples produce performance estimates that have very low variance.</p></li>
+<li><p>Bias: is mostly driven by the amount of data that is held back. Bootstrap has large bias compared to CV.</p></li>
+</ul>
+<p>Max Kuhn insight is that he tend to favor 5 repeats of 10-fold CV unless the size of the assessment data is large enough.</p>
+</div>
+<div id="source" class="section level1">
+<h1 class="hasAnchor">
+<a href="#source" class="anchor"></a>Source</h1>
+<p>This post is an adaptation from <a href="https://rsample.tidymodels.org/index.html">rsample vignette</a>, <a href="https://speakerdeck.com/statsfan/rsample-sampler">resampling methods with R</a>, <a href="https://github.com/topepo/rstudio-conf-2018/blob/master/Materials/Part_2_Basic_Principals.pdf">resampling methods</a> and <a href="https://www.tmwr.org/resampling.html">Resampling for evaluating performance</a>. Those are fantastic resources to get a better understanding of the underlying principles of resampling.</p>
+</div>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
 
-      </div>
+        <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
+    </nav>
+</div>
 
 </div>
 
