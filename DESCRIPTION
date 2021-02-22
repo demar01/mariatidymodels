@@ -18,7 +18,12 @@ Depends:
 LazyData: true
 Imports:
     dplyr (>= 0.7.0),
-    infer
+    infer,
+    usemodels, 
+    tidymodels,
+    doParallel,
+    palmerpenguins,
+    broom
 Suggests: 
     knitr,
     rmarkdown

@@ -1,14 +1,12 @@
-#' simulator
+#' customised_model_yardstick
 #'
-#' @param numer integer length of distribution
-#' @param bins integer size of bins for histogram
-#'
-#' @return a histigram showing CI at the 95% confidence level
+#' @return a list with model parameters built on top of use_kknn(sex ~ ., data = penguin_train)
 #' @examples
-#' simulator()
-#' @import infer
-#' @importFrom dplyr tibble
-#' @importFrom stats cor rbeta
+#' if(interactive()){
+#' personalysed_knn_penguins_sex<-customised_model_yardstick()
+#' }
+#' @import usemodels
+#' @import tidymodels
 #' @export
 customised_model_yardstick <- function (){
 
@@ -56,8 +54,10 @@ customised_model_yardstick <- function (){
         metrics = c_metrics
     )
 
-    modellist <- list("recipe" = kknn_recipe, "metrics" = c_metrics,"control" = model_control,
-                      "spec"=kknn_spec, "grid","workflow" = kknn_workflow, "tune"=knn_tune )
+    modellist <- list("recipe" = kknn_recipe, "metrics" = c_metrics,
+                      "control" = model_control,
+                      "spec"=kknn_spec, grid="grid","workflow" = kknn_workflow,
+                      "tune"=knn_tune )
 
 return(modellist)
 }

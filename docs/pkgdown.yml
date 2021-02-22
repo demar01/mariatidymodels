@@ -4,5 +4,6 @@ pkgdown_sha: ~
 articles:
   infer: infer.html
   rsample: rsample.html
-last_built: 2021-02-18T13:11Z
+  yardstick: yardstick.html
+last_built: 2021-02-22T09:22Z
 

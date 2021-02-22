@@ -2,7 +2,7 @@
 title: "Example of model performance assessment"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{rsample}
+  %\VignetteIndexEntry{yardstick}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
@@ -17,19 +17,21 @@ knitr::opts_chunk$set(
 )
 ```
 
-# EDA to decide model
+# EDA to select a model
 
-Let's calculate several assessment measurements with *yardstick*
-
-```{r}
+```{r, message=FALSE}
 library(tidymodels)
 library(usemodels)
 library(palmerpenguins)
+library(broom)
+library(mariatidymodels)
 ```
 
-Take the penguins dataset. This dataset has variables for 3 species of
-penguins. These variables are what classify the species. There is also
-information about sex. So we can
+Take the penguins dataset; this dataset has variables (bill_length,
+bill_depth, flipper_length etc) for 3 species of penguins. These
+variables really are what are used to classify penguins into species. In
+the \`penguins\` dataset, there is also information about sex. Let's
+plot that:
 
 ```{r}
 penguins %>%
@@ -39,11 +41,12 @@ penguins %>%
     facet_wrap(~species)
 ```
 
-It looks like females then to have smaler bill length and depth. And it
+It looks like females then to have smaller bill length and depth. And it
 seems like body weigh is more specific for the specie ( i.e. Gentoo
-penguins look hevier). We could build a classification model that
+penguins look heavier). We could build a classification model that
 predict whether a penguin is female or male using the other from the
-other 5 body characteristics in the dataset.
+other 5 body characteristics in the dataset. Then we can calculate
+several assessment measurements with *yardstick.*
 
 ```{r}
 penguins_df <- penguins %>%
@@ -64,8 +67,8 @@ k_folds <- bootstraps(penguin_train)
 
 # Building model with usemodels
 
-`usemodels` gives you such a great boilerplate to customise your models.
-For instance, we can use `r use_kknn(sex ~ ., data = penguin_train)` and
+`usemodels` gives you such a great boilerplate to customise models. For
+instance, we can use `r use_kknn(sex ~ ., data = penguin_train)` and
 customize the output model.
 
 ```{r}
@@ -131,6 +134,23 @@ knn_tune <- tune_grid(
 I wrote this as a function which returns all the model parameters called
 `customised_model_yardstick`
 
+```{r}
+pesonalised_model<-customised_model_yardstick()
+
+```
+
+A lot of information is hold in the output of that function
+
+```{r}
+names(pesonalised_model)
+```
+
+For instance we can have a look at the specified recipe
+
+```{r}
+pesonalised_model$recipe
+```
+
 # Visualising model performance
 
 We can visualise how the model performs for all the defined metric
@@ -188,7 +208,8 @@ We can get all the estimates for our confusion metric
 
 ```{r}
 c_data_metric %>% 
-  yardstick::conf_mat(sex, pred)  %>% summary()
+  yardstick::conf_mat(sex, pred)  %>%
+    summary()
 ```
 
 And we can have a tidy version of our confusion matrix
@@ -200,7 +221,7 @@ broom::tidy(cm)
 # Confussion matrix components
 
 In the [Wikipedia](https://en.wikipedia.org/wiki/Confusion_matrix) page,
-we can see
+we can see that what each term measures.
 
 1.  Accuracy
 
@@ -221,7 +242,8 @@ c_data_metric %>%
 Sensitivy looks at how sensitive models are to False Negatives
 
 ```{r}
-c_data_metric %>% sens(sex, pred)
+c_data_metric %>%
+    sens(sex, pred)
 
 (tidy(cm)$value[1])/(tidy(cm)$value[1]+tidy(cm)$value[2])
 ```
@@ -231,31 +253,70 @@ c_data_metric %>% sens(sex, pred)
 Precision measures how sensitive model is to False Positives
 
 ```{r}
+c_data_metric %>%
+    ppv(sex, pred)
+
+(tidy(cm)$value[1])/(tidy(cm)$value[1]+tidy(cm)$value[3])
 
 ```
 
-c_data_metric %\>% ppv(sex, pred)
+4\. F1 Score
 
-(tidy(cm)$value[1])/(tidy(cm)$value[1]+tidy(cm)\$value[3])
+F1 measures the harmonic average of the precision and recall.
 
-\#4. F1 Score \# harmonic average of the precision and recall.
-c_data_metric %\>% f_meas(sex,.pred_class)
+```{r}
+ c_data_metric %>%
+     f_meas(sex,.pred_class)
+```
 
-knn_tune %\>% collect_predictions() %\>% group_by(id) %\>%
-roc_curve(sex, .pred_female) %\>% autoplot()
+We can plot the roc curves for the models
 
-knn_tune %\>% tune::select_best(metric="roc_auc")
+```{r}
+knn_tune %>% collect_predictions() %>% 
+    group_by(id) %>% 
+    roc_curve(sex, .pred_female) %>%
+    autoplot()
+```
 
-knn_model \<- nearest_neighbor(neighbors =13) %\>%
-set_mode("classification") %\>% set_engine("kknn")
+# Selecting best model
 
-final_model \<- workflow() %\>% add_model(knn_model) %\>%
-add_recipe(kknn_recipe)
+We can see what model have us the best roc_auc
 
-final_res \<- tune::last_fit(final_model, penguin_split)
+```{r}
+knn_tune %>% tune::select_best(metric="roc_auc")
+```
 
-final_res %\>% tune::collect_predictions() %\>% mutate(correct =
-case_when( sex == .pred_class \~ "correct", TRUE \~ "incorrect" )) %\>%
-bind_cols(penguin_test) %\>% ggplot(aes(sex...14, color=correct)) +
-geom_bar() + labs(color = NULL) + xlab("")
+14 neighbors has best roc auc score, so we can add that into the model
 
+```{r}
+knn_model <- nearest_neighbor(neighbors =14) %>% 
+    set_mode("classification") %>% 
+    set_engine("kknn")
+```
+
+We can actually add the final model into a workflow and add the recipe
+into that workflow as well
+
+```{r}
+final_model <- workflow() %>%
+    add_model(knn_model) %>% 
+    add_recipe(kknn_recipe)
+```
+
+So after determining the best model, the final fit on the entire
+training set is needed; we can do that with `last_fit`.
+
+```{r}
+final_res <- tune::last_fit(final_model, penguin_split)
+```
+
+We can see how our model will predict on our test unseen data.
+
+```{r}
+final_res %>%
+    tune::collect_predictions() %>% 
+    mutate(correct = case_when( sex == .pred_class ~ "correct", TRUE ~ "incorrect" )) %>%
+    bind_cols(penguin_test) %>% 
+    ggplot(aes(sex...14, color=correct)) + 
+    geom_bar() + labs(color = NULL) + xlab("")
+```
