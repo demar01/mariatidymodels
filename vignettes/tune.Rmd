@@ -1,0 +1,269 @@
+---
+title: "Tuning hyperparameters"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{tune}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+The `tune` package helps optimize the modeling process. Users can *tag*
+arguments in recipes and model objects for optimization.
+
+# Data
+
+Let's build the lasso linear regression model to predict house prices.
+We can tune lasso penalty values as well as We can use the `ames`
+dataset, which is in the right format.
+
+```{r, message=FALSE}
+library(tidyverse)
+library(tidymodels)
+library(AmesHousing)
+```
+
+```{r}
+df <- make_ames()
+
+# ames %>% summary()
+set.seed(4595)
+data_split <- initial_split(df, prop = .8)
+ames_train <- training(data_split)
+ames_test <- testing(data_split)
+
+k_folds_data <- vfold_cv(ames_train)
+```
+
+Something neat to see is the outcome distribution between the training
+data and the testing data
+
+```{r}
+ggplot(ames_train, aes(x = Sale_Price)) +
+geom_line(stat = "density",
+trim = TRUE) +
+geom_line(data = ames_test,
+stat = "density",
+trim = TRUE, col = "red")
+```
+
+# Pre-procesing recipe with tuning parameters
+
+Let's define a recipe where we allow to tune some parameters later on.
+These parameters cannot be analytically determined from the data by the
+ML algorithm (a.k.a. a hyper-parameter), but instead we need to tweak
+it. The way to do so is by o use resampling to estimate model
+performance over different values of these parameters and use these
+results to set reasonable values.
+
+```{r}
+tidy_rec <- recipe(Sale_Price~., data = ames_train) %>% 
+  step_corr(all_numeric(), -all_outcomes(), threshold = tune("num_thresh")) %>% 
+  step_nzv(all_numeric(), -all_outcomes()) %>% 
+  step_normalize(all_numeric(), -all_outcomes()) %>% 
+  step_YeoJohnson(all_numeric(), -all_outcomes()) %>% 
+  step_pca(all_numeric(), -all_outcomes(), num_comp = tune()) %>% 
+  step_other(all_nominal(), threshold = tune("cat_thresh")) %>% 
+  step_dummy(all_nominal())
+```
+
+We have 3 hyperparameter to tune: `num_thresh`, `num_comp` and
+`cat_thresh`.
+
+# Model
+
+```{r}
+# Define a model
+linear_model <- linear_reg(penalty = tune(), mixture = 1) %>% 
+  set_mode("regression") %>% 
+  set_engine("glmnet")
+
+```
+
+We have 1 hyperparameter to tune in the model: the amount of penalty.
+
+# Metric functions
+
+```{r}
+model_metrics <- metric_set(rmse, rsq, rsq_trad, mae)
+```
+
+# Grids
+
+There are two things to tune: the model and the pre-processing
+parameters.
+
+tuning grid for model
+
+```{r}
+model_grid <- grid_regular(parameters(linear_model), levels = 5)
+```
+
+We are gonna have 5 different penalty scores
+
+pre-processing grid for recipe
+
+```{r}
+#We can fine tune these threshold to meet what is a realistic values for our preprocessing method. Not adding these filter can cause error (notes)
+rec_grid <- grid_regular(parameters(tidy_rec), levels = 5, filter = c(num_thresh > .7 & cat_thresh > .01))
+
+```
+
+We can see which 3 hyper-parameters we can tune in the recipe and which
+we can tune in the model
+
+```{r}
+parameters(tidy_rec)
+parameters(linear_model)
+
+```
+
+We can combine the grids from our model parameters with our
+pre-processing parameters into a single grid.
+
+```{r}
+model_rec_grid <- merge(model_grid, rec_grid)
+```
+
+# Tunning
+
+```{r, message=FALSE}
+
+model_res <- tune_grid(linear_model,
+                       preprocessor = tidy_rec,
+                       resamples = k_folds_data,
+                       grid = model_rec_grid,
+                       metrics = model_metrics
+)
+```
+
+We can see that there where no errors (notes)
+
+```{r}
+map(model_res %>% pull(.notes),dim) %>% unlist()
+```
+
+We can see our features and we can group them by metric
+
+```{r}
+model_res %>% 
+  collect_metrics() %>% 
+  group_by(.metric) %>% 
+  summarise(min = min(mean),
+            median = median(mean),
+            mean = mean(mean),
+            max = max(mean))
+```
+
+Mae (mean absolute error) is very low, which is what we want in our
+model.
+
+We can view Mae for each fold.
+
+```{r}
+model_res %>% 
+  collect_metrics(summarize = FALSE) %>% 
+  pivot_longer(num_thresh:cat_thresh) %>% 
+  filter(.metric == "mae") %>% 
+  ggplot(aes(x = value, y = .estimate)) + 
+  geom_point() + 
+  geom_smooth() + 
+  facet_wrap(~name, scales = "free") #faceting for tuning process for the  preprocessing (recipes)
+```
+
+What we can see is that as we increase our lumping threshold for
+categorical varibles our mae increases. Mae stays the same for all the
+numer_components and mae decreases for higher num_tresh.
+
+# Selecting parameters with best metrics
+
+```{r}
+model_res %>% select_by_one_std_err("mae")
+model_tune <- model_res %>% select_best("mae")
+```
+
+# Applying parameters to the model
+
+To finalize the model we apply this parameters to the initial model. To
+finalize the recipe we apply this parameters to the initial recipe
+
+```{r}
+linear_model
+linear_model <- finalize_model(linear_model, model_tune)
+linear_model
+tidy_rec
+tidy_rec <- finalize_recipe(tidy_rec, model_tune)
+tidy_rec
+
+```
+
+# Putting all final parameters together
+
+After determining the best model, the final fit on the entire training
+set is needed and is then evaluated on the test set. We can use a
+workflow to put it all together. We put the model and recipe with tuned
+parameters together.
+
+```{r}
+pricing_model <- workflow() %>% 
+  add_model(linear_model) %>% 
+  add_recipe(tidy_rec)
+```
+
+# Last fit
+
+Train model on train set and evaluate on test set
+
+```{r}
+pricing_model_fit <- last_fit(pricing_model, data_split)
+
+```
+
+# Collect predictons
+
+We can obtain the results produced by tuning functions
+
+```{r}
+pricing_model_fit %>% 
+    collect_predictions() 
+```
+
+We can calculate the results produced by tuning functions (calculate
+test set's mae)
+
+```{r}
+pricing_model_fit %>% 
+  collect_predictions() %>% 
+  mae(.pred, Sale_Price)
+```
+
+The estimate from final model fit does a bit better than in sample kfold
+set.
+
+# Visualizing model predictions
+
+```{r}
+pricing_model_fit %>% 
+  collect_predictions() %>% 
+  ggplot(aes(x = .pred, y = Sale_Price)) + 
+  geom_point() + 
+  geom_smooth() + 
+  geom_abline(slope = 1, intercept = 0)
+
+```
+
+# Source
+
+This vignette mainly uses great video from [Andrw
+Couch](https://www.youtube.com/watch?v=i4If7kF2xt4) ✴️
