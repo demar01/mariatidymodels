@@ -112,3 +112,9 @@ regressions %>%
 -   For more additional explanations of how to interpret output of
     linear regression model check
     [dsbox](https://rstudio-education.github.io/datascience-box/course-materials/slides/u4-d02-fitting-interpreting-models/u4-d02-fitting-interpreting-models.html#7).
+
+# Source 
+
+This article is inspired by the bootstrap article on [broom
+pkgdown](https://www.tidymodels.org/learn/statistics/bootstrap/). I
+modified nested lists, because it helps keeping my mental model tidier .

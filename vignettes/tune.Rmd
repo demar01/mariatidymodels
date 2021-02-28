@@ -265,5 +265,5 @@ pricing_model_fit %>%
 
 # Source
 
-This vignette mainly uses great video from [Andrw
+This vignette mainly uses great video from [Andrew
 Couch](https://www.youtube.com/watch?v=i4If7kF2xt4) ✴️

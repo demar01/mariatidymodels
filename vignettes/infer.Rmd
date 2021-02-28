@@ -75,3 +75,7 @@ My little wrapper for this particular task
 ```{r simulate}
 simulator(numer=25, bins=20)
 ```
+
+# Source 
+
+This article is inspired by the t_test article on [infer pkgdown.](https://infer.netlify.app/articles/t_test.html) I added `get_confidence_interval` and `shade_confidence_interval` functions to add information about CI as well as generate my own `simulator` function to automate this process.
