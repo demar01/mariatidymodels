@@ -1,5 +1,5 @@
 ---
-title: "Example of model performance assessment"
+title: "yardstick: assessing model performance "
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{yardstick}

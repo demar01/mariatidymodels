@@ -1,5 +1,5 @@
 ---
-title: "Diving into infer"
+title: "infer: statistical inference"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{infer}

@@ -1,5 +1,5 @@
 ---
-title: "rsample"
+title: "rsample: create resamples"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{rsample}

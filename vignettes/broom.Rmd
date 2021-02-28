@@ -1,0 +1,111 @@
+---
+title: "broom: tidy model information"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{broom}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
++--------------+------------------------------------------------------+
+| Col1         | Col2                                                 |
++==============+======================================================+
+| -   `tidy`   | -   summarizes information about model components    |
++--------------+------------------------------------------------------+
+| -   `glance` | -   reports information about the entire model       |
++--------------+------------------------------------------------------+
+| -            | -   adds information about observations to a dataset |
+|    `augment` |                                                      |
++--------------+------------------------------------------------------+
+
+# Introduction
+
+[Broom](https://broom.tidymodels.org/index.html) helps creating tidier
+statistical methods
+
+```{r}
+library(tidymodels)
+```
+
+```{r}
+ggplot(mtcars, aes(mpg, wt)) + 
+    geom_point()
+```
+
+Let's say we want to fit a nonlinear model to the weight/mileage
+relationship in the `mtcars` data set. We can use the `nls` function to
+determine the nonlinear (weighted) least-squares estimates of the
+nonlinear model.
+
+    nlsfit <- nls(formula=mpg ~ k / wt + b, data= mtcars, start = list(k = 1, b = 0))
+    summary(nlsfit)
+
+As we can see this is a non-tidy output.
+
+We can generate 2000 bootstrap samples replicates of the data using
+`bootstraps` for sampling with replacement.
+
+```{r}
+set.seed(27)
+boots <- bootstraps(mtcars, times = 2000, apparent = TRUE)
+```
+
+```{r}
+fit_nls_on_bootstrap <- function(split) {
+    nls(mpg ~ k / wt + b, analysis(split), start = list(k = 1, b = 0))
+}
+```
+
+Now, we can map this function to the bootstraps and map tidy, glance and
+augment to get a tidy coefficients information.
+
+```{r}
+regressions <-  boots %>% 
+  mutate(model = map(splits, fit_nls_on_bootstrap),
+         tidied = map(model, tidy),
+         glanced = map(model, glance),
+         augmented = map(model, augment)
+         )
+```
+
+If we inspect `regressions` we can see that tidied, glanced and
+augmented column contain ***nested lists*** with 5, 4 and 9 variables
+each respectively.
+
+```{r}
+regressions
+```
+
+We can select 200 random bootstrap and unnest `augment()` to visualize
+the uncertainty in the fitted curve.
+
+```{r}
+regressions %>% 
+    sample_n(200) %>%
+    unnest(augmented) %>% 
+    ggplot( aes(wt, mpg)) +
+    geom_line(aes(y = .fitted, group = id), alpha = .2, col = "blue") +
+    geom_point()
+```
+
+# Additional links
+
+-   You can contribute to implementing additional tidying methods. Check
+    out [available tidy
+    methods](https://broom.tidymodels.org/articles/available-methods.html)
+    and the principles to implement them
+    [here](https://www.tidymodels.org/learn/develop/broom/#implement-tidying-methods)
+
+-   For more additional explanations of how to interpret output of
+    linear regression model check
+    [dsbox](https://rstudio-education.github.io/datascience-box/course-materials/slides/u4-d02-fitting-interpreting-models/u4-d02-fitting-interpreting-models.html#7).

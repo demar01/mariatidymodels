@@ -19,11 +19,12 @@ LazyData: true
 Imports:
     dplyr (>= 0.7.0),
     infer,
-    usemodels, 
+    usemodels,
     tidymodels,
     doParallel,
     palmerpenguins,
-    broom
+    broom,
+    generics
 Suggests: 
     knitr,
     rmarkdown

@@ -1,5 +1,5 @@
 ---
-title: "Tuning hyperparameters"
+title: "Tune: tuning hyperparameters"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{tune}
