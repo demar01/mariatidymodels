@@ -17,8 +17,14 @@ knitr::opts_chunk$set(
 )
 ```
 
+# Introduction
+
+[Broom](https://broom.tidymodels.org/index.html) helps creating tidier
+statistical methods. The three main functions around broom to interact
+with tidy models are:
+
 +--------------+------------------------------------------------------+
-| Col1         | Col2                                                 |
+| Function     | Action                                               |
 +==============+======================================================+
 | -   `tidy`   | -   summarizes information about model components    |
 +--------------+------------------------------------------------------+
@@ -28,10 +34,7 @@ knitr::opts_chunk$set(
 |    `augment` |                                                      |
 +--------------+------------------------------------------------------+
 
-# Introduction
-
-[Broom](https://broom.tidymodels.org/index.html) helps creating tidier
-statistical methods
+# Example
 
 ```{r}
 library(tidymodels)
